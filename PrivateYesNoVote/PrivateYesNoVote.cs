@@ -2,15 +2,17 @@
 
 public class PrivateYesNoVote : SmartContract
 {
-    public PrivateYesNoVote(ISmartContractState smartContractState, ulong votePeriodEndBlock, byte[] masterNodes) 
+    public PrivateYesNoVote(ISmartContractState smartContractState, ulong votePeriodEndBlock, byte[] whitelistedAddresses) 
         : base(smartContractState)
     {
+        Assert(votePeriodEndBlock > Block.Number, "Voting period end block must be greater than current block.");
+        
         VotePeriodEndBlock = votePeriodEndBlock;
-        var masterNodesList = Serializer.ToArray<Address>(masterNodes);
-
-        foreach (var masterNode in masterNodesList)
+        
+        var addresses = Serializer.ToArray<Address>(whitelistedAddresses);
+        foreach (var address in addresses)
         {
-            SetAuthorization(masterNode);
+            SetAuthorization(address);
         }
     }
 
@@ -34,12 +36,12 @@ public class PrivateYesNoVote : SmartContract
 
     private void SetAuthorization(Address address)
     {
-        PersistentState.SetBool($"MasterNode:{address}", true);
+        PersistentState.SetBool($"Authorized:{address}", true);
     }
 
     public bool IsAuthorized(Address address)
     {
-        return PersistentState.GetBool($"MasterNode:{address}");
+        return PersistentState.GetBool($"Authorized:{address}");
     }
 
     public string GetVote(Address address)

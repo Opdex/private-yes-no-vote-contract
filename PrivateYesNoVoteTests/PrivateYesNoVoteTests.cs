@@ -124,14 +124,31 @@ namespace PrivateYesNoVoteTests
         [Fact]
         public void CanVote_Throws_VotPeriodEnded()
         {
-            var voteContract = CreateNewVoteContract(100001);
-            
+            var voteContract = CreateNewVoteContract();
+
             SetupMessage(_contract, _mn1);
-            
+            SetupBlock(100001);
+
             voteContract
                 .Invoking(v => v.Vote("yes"))
                 .Should().Throw<SmartContractAssertException>()
                 .WithMessage("Voting period has ended.");
+        }
+
+        [Fact]
+        public void CreateContract_Throws_InvalidVoteEndBlock()
+        {
+            try
+            {
+                CreateNewVoteContract(2, 2);
+                
+                // Intentionally fail the test if we reach here
+                false.Should().BeTrue();
+            }
+            catch (SmartContractAssertException ex)
+            {
+                ex.Message.Should().Be("Voting period end block must be greater than current block.");
+            }
         }
     }
 }

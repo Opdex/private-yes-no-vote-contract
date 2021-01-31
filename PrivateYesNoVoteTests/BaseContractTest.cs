@@ -56,6 +56,11 @@ namespace OpdexProposalVoteTests
             _mockContractState.Setup(x => x.Message).Returns(new Message(contractAddress, sender, value));
         }
 
+        protected void SetupBlock(ulong blockNumber)
+        {
+            _mockContractState.Setup(x => x.Block.Number).Returns(blockNumber);
+        }
+
         protected void SetupBalance(ulong balance)
         {
             _mockContractState.Setup(x => x.GetBalance).Returns(() => balance);
