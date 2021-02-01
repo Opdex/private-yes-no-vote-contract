@@ -14,19 +14,19 @@ namespace PrivateYesNoVoteTests
             var voteContract = CreateNewVoteContract();
 
             voteContract.VotePeriodEndBlock.Should().Be(100000);
-            voteContract.IsAuthorized(_mn1).Should().BeTrue();
-            voteContract.IsAuthorized(_mn2).Should().BeTrue();
-            voteContract.IsAuthorized(_mn3).Should().BeTrue();
+            voteContract.IsAuthorized(AddressOne).Should().BeTrue();
+            voteContract.IsAuthorized(AddressTwo).Should().BeTrue();
+            voteContract.IsAuthorized(AddressThree).Should().BeTrue();
         }
 
         [Fact]
         public void CanVoteYes_Success()
         {
-            var sender = _mn1;
+            var sender = AddressOne;
             const string vote = "yes";
             var voteContract = CreateNewVoteContract();
             
-            SetupMessage(_contract, sender);
+            SetupMessage(Contract, sender);
 
             voteContract.YesVotes.Should().Be(0);
             voteContract.NoVotes.Should().Be(0);
@@ -36,7 +36,7 @@ namespace PrivateYesNoVoteTests
             voteContract.NoVotes.Should().Be(0);
             voteContract.YesVotes.Should().Be(1);
 
-            VerifyLog(new PrivateYesNoVote.VoteEvent {MasterNode = _mn1, Vote = vote}, Times.Once);
+            VerifyLog(new PrivateYesNoVote.VoteEvent {MasterNode = AddressOne, Vote = vote}, Times.Once);
         }
         
         [Fact]
@@ -44,7 +44,7 @@ namespace PrivateYesNoVoteTests
         {
             var voteContract = CreateNewVoteContract();
             
-            SetupMessage(_contract, _mn1);
+            SetupMessage(Contract, AddressOne);
 
             voteContract.YesVotes.Should().Be(0);
             voteContract.NoVotes.Should().Be(0);
@@ -64,15 +64,15 @@ namespace PrivateYesNoVoteTests
             voteContract.NoVotes.Should().Be(0);
             
             // MN 1
-            SetupMessage(_contract, _mn1);
+            SetupMessage(Contract, AddressOne);
             voteContract.Vote("no");
             
             // MN 2
-            SetupMessage(_contract, _mn2);
+            SetupMessage(Contract, AddressTwo);
             voteContract.Vote("yes");
             
             // MN 3
-            SetupMessage(_contract, _mn3);
+            SetupMessage(Contract, AddressThree);
             voteContract.Vote("yes");
 
             voteContract.YesVotes.Should().Be(2);
@@ -84,7 +84,7 @@ namespace PrivateYesNoVoteTests
         {
             var voteContract = CreateNewVoteContract();
             
-            SetupMessage(_contract, _mn1);
+            SetupMessage(Contract, AddressOne);
             voteContract.Vote("no");
             
             voteContract.NoVotes.Should().Be(1);
@@ -100,7 +100,7 @@ namespace PrivateYesNoVoteTests
         {
             var voteContract = CreateNewVoteContract();
             
-            SetupMessage(_contract, _sender);
+            SetupMessage(Contract, Sender);
             
             voteContract
                 .Invoking(v => v.Vote("Yes"))
@@ -113,7 +113,7 @@ namespace PrivateYesNoVoteTests
         {
             var voteContract = CreateNewVoteContract();
             
-            SetupMessage(_contract, _mn1);
+            SetupMessage(Contract, AddressOne);
             
             voteContract
                 .Invoking(v => v.Vote("Maybe"))
@@ -126,7 +126,7 @@ namespace PrivateYesNoVoteTests
         {
             var voteContract = CreateNewVoteContract();
 
-            SetupMessage(_contract, _mn1);
+            SetupMessage(Contract, AddressOne);
             SetupBlock(100001);
 
             voteContract
