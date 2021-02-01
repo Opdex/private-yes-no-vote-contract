@@ -20,6 +20,38 @@ namespace PrivateYesNoVoteTests
         }
 
         [Fact]
+        public void WhitelistAddresses_Success()
+        {
+            var voteContract = CreateNewVoteContract();
+
+            SetupMessage(Contract, Owner);
+            
+            var addressList = new[] {AddressFour, AddressFive, AddressSix};
+            var bytes = Serializer.Serialize(addressList);
+            
+            voteContract.WhitelistAddresses(bytes);
+
+            voteContract.IsAuthorized(AddressFour).Should().BeTrue();
+            voteContract.IsAuthorized(AddressFive).Should().BeTrue();
+            voteContract.IsAuthorized(AddressSix).Should().BeTrue();
+        }
+
+        [Fact]
+        public void WhitelistAddresses_Throws_SenderIsNotOwner()
+        {
+            var voteContract = CreateNewVoteContract();
+            var addressList = new[] {AddressFour, AddressFive, AddressSix};
+            var bytes = Serializer.Serialize(addressList);
+            
+            SetupMessage(Contract, AddressOne);
+
+            voteContract
+                .Invoking(v => v.WhitelistAddresses(bytes))
+                .Should().Throw<SmartContractAssertException>()
+                .WithMessage("Must be contract owner to whitelist addresses");
+        }
+
+        [Fact]
         public void CanVoteYes_Success()
         {
             var sender = AddressOne;
@@ -100,7 +132,7 @@ namespace PrivateYesNoVoteTests
         {
             var voteContract = CreateNewVoteContract();
             
-            SetupMessage(Contract, Sender);
+            SetupMessage(Contract, Owner);
             
             voteContract
                 .Invoking(v => v.Vote("Yes"))

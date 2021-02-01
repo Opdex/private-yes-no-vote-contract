@@ -14,13 +14,16 @@ namespace OpdexProposalVoteTests
         private readonly Mock<ISmartContractState> MockContractState;
         private readonly Mock<IContractLogger> MockContractLogger;
         private readonly Mock<IInternalTransactionExecutor> MockInternalExecutor;
-        private readonly ISerializer Serializer;
         private readonly InMemoryState PersistentState;
+        protected readonly ISerializer Serializer;
         protected readonly Address Contract;
-        protected readonly Address Sender;
+        protected readonly Address Owner;
         protected readonly Address AddressOne;
         protected readonly Address AddressTwo;
         protected readonly Address AddressThree;
+        protected readonly Address AddressFour;
+        protected readonly Address AddressFive;
+        protected readonly Address AddressSix;
 
         protected BaseContractTest()
         {
@@ -34,21 +37,24 @@ namespace OpdexProposalVoteTests
             MockContractState.Setup(x => x.InternalTransactionExecutor).Returns(MockInternalExecutor.Object);
             MockContractState.Setup(x => x.Serializer).Returns(Serializer);
             Contract = "0x0000000000000000000000000000000000000001".HexToAddress();
-            Sender = "0x0000000000000000000000000000000000000002".HexToAddress();
+            Owner = "0x0000000000000000000000000000000000000002".HexToAddress();
             AddressOne = "0x0000000000000000000000000000000000000003".HexToAddress();
             AddressTwo = "0x0000000000000000000000000000000000000004".HexToAddress();
             AddressThree = "0x0000000000000000000000000000000000000005".HexToAddress();
+            AddressFour = "0x0000000000000000000000000000000000000006".HexToAddress();
+            AddressFive = "0x0000000000000000000000000000000000000007".HexToAddress();
+            AddressSix = "0x0000000000000000000000000000000000000008".HexToAddress();
         }
 
         protected PrivateYesNoVote CreateNewVoteContract(ulong currentBlock = 99999, ulong endBlock = 100000)
         {
-            MockContractState.Setup(x => x.Message).Returns(new Message(Contract, Sender, 0));
+            MockContractState.Setup(x => x.Message).Returns(new Message(Contract, Owner, 0));
             MockContractState.Setup(x => x.Block.Number).Returns(currentBlock);
             
-            var masterNodesList = new[] {AddressOne, AddressTwo, AddressThree};
-            var bytesList = Serializer.Serialize(masterNodesList);
+            var addresses = new[] {AddressOne, AddressTwo, AddressThree};
+            var bytes = Serializer.Serialize(addresses);
 
-            return new PrivateYesNoVote(MockContractState.Object, endBlock, bytesList);
+            return new PrivateYesNoVote(MockContractState.Object, endBlock, bytes);
         }
 
         protected void SetupMessage(Address contractAddress, Address sender, ulong value = 0)
@@ -70,7 +76,7 @@ namespace OpdexProposalVoteTests
         {
             MockInternalExecutor
                 .Setup(x => x.Call(MockContractState.Object, to, amountToTransfer, methodName, parameters, It.IsAny<ulong>()))
-                .Returns(result);
+                .Returns(result); 
         }
 
         protected void SetupTransfer(Address to, ulong value, TransferResult result)
