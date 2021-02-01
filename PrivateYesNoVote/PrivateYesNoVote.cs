@@ -68,12 +68,13 @@ public class PrivateYesNoVote : SmartContract
         
         SetVote(Message.Sender, vote);
         
-        Log(new VoteEvent { MasterNode = Message.Sender, Vote = vote });
+        Log(new VoteEvent { Voter = Message.Sender, Vote = vote });
     }
 
     public struct VoteEvent
     {
-        public Address MasterNode;
+        [Index]
+        public Address Voter;
         public string Vote;
     }
 }

@@ -36,7 +36,7 @@ namespace PrivateYesNoVoteTests
             voteContract.NoVotes.Should().Be(0);
             voteContract.YesVotes.Should().Be(1);
 
-            VerifyLog(new PrivateYesNoVote.VoteEvent {MasterNode = AddressOne, Vote = vote}, Times.Once);
+            VerifyLog(new PrivateYesNoVote.VoteEvent {Voter = AddressOne, Vote = vote}, Times.Once);
         }
         
         [Fact]
@@ -63,15 +63,15 @@ namespace PrivateYesNoVoteTests
             voteContract.YesVotes.Should().Be(0);
             voteContract.NoVotes.Should().Be(0);
             
-            // MN 1
+            // Address 1
             SetupMessage(Contract, AddressOne);
             voteContract.Vote("no");
             
-            // MN 2
+            // Address 2
             SetupMessage(Contract, AddressTwo);
             voteContract.Vote("yes");
             
-            // MN 3
+            // Address 3
             SetupMessage(Contract, AddressThree);
             voteContract.Vote("yes");
 
