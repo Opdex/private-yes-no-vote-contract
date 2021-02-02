@@ -1,4 +1,5 @@
-﻿using FluentAssertions;
+﻿using System;
+using FluentAssertions;
 using Moq;
 using OpdexProposalVoteTests;
 using Stratis.SmartContracts;
@@ -11,9 +12,13 @@ namespace PrivateYesNoVoteTests
         [Fact]
         public void CreatesVoteContract_Success()
         {
-            var voteContract = CreateNewVoteContract();
+            const ulong currentBlock = 1000;
+            const ulong duration = 1500;
+            const ulong expectedEndBlock = 2500;
+            
+            var voteContract = CreateNewVoteContract(currentBlock, duration);
 
-            voteContract.VotePeriodEndBlock.Should().Be(100000);
+            voteContract.VotePeriodEndBlock.Should().Be(expectedEndBlock);
             voteContract.IsAuthorized(AddressOne).Should().BeTrue();
             voteContract.IsAuthorized(AddressTwo).Should().BeTrue();
             voteContract.IsAuthorized(AddressThree).Should().BeTrue();
@@ -48,14 +53,15 @@ namespace PrivateYesNoVoteTests
             voteContract
                 .Invoking(v => v.WhitelistAddresses(bytes))
                 .Should().Throw<SmartContractAssertException>()
-                .WithMessage("Must be contract owner to whitelist addresses");
+                .WithMessage("Must be contract owner to whitelist addresses.");
         }
 
         [Fact]
         public void CanVoteYes_Success()
         {
             var sender = AddressOne;
-            const string vote = "yes";
+            const bool vote = true;
+
             var voteContract = CreateNewVoteContract();
             
             SetupMessage(Contract, sender);
@@ -74,17 +80,22 @@ namespace PrivateYesNoVoteTests
         [Fact]
         public void CanVoteNo_Success()
         {
+            var sender = AddressOne;
+            const bool vote = false;
+            
             var voteContract = CreateNewVoteContract();
             
-            SetupMessage(Contract, AddressOne);
+            SetupMessage(Contract, sender);
 
             voteContract.YesVotes.Should().Be(0);
             voteContract.NoVotes.Should().Be(0);
             
-            voteContract.Vote("no");
+            voteContract.Vote(vote);
 
             voteContract.NoVotes.Should().Be(1);
             voteContract.YesVotes.Should().Be(0);
+            
+            VerifyLog(new PrivateYesNoVote.VoteEvent {Voter = sender, Vote = vote}, Times.Once);
         }
 
         [Fact]
@@ -95,17 +106,17 @@ namespace PrivateYesNoVoteTests
             voteContract.YesVotes.Should().Be(0);
             voteContract.NoVotes.Should().Be(0);
             
-            // Address 1
+            // Address 1 Vote
             SetupMessage(Contract, AddressOne);
-            voteContract.Vote("no");
+            voteContract.Vote(false);
             
-            // Address 2
+            // Address 2 Vote
             SetupMessage(Contract, AddressTwo);
-            voteContract.Vote("yes");
+            voteContract.Vote(true);
             
-            // Address 3
+            // Address 3 Vote
             SetupMessage(Contract, AddressThree);
-            voteContract.Vote("yes");
+            voteContract.Vote(true);
 
             voteContract.YesVotes.Should().Be(2);
             voteContract.NoVotes.Should().Be(1);
@@ -117,12 +128,12 @@ namespace PrivateYesNoVoteTests
             var voteContract = CreateNewVoteContract();
             
             SetupMessage(Contract, AddressOne);
-            voteContract.Vote("no");
+            voteContract.Vote(false);
             
             voteContract.NoVotes.Should().Be(1);
             
             voteContract
-                .Invoking(v => v.Vote("yes"))
+                .Invoking(v => v.Vote(true))
                 .Should().Throw<SmartContractAssertException>()
                 .WithMessage("Sender has already voted.");
         }
@@ -135,22 +146,9 @@ namespace PrivateYesNoVoteTests
             SetupMessage(Contract, Owner);
             
             voteContract
-                .Invoking(v => v.Vote("Yes"))
+                .Invoking(v => v.Vote(true))
                 .Should().Throw<SmartContractAssertException>()
                 .WithMessage("Sender is not authorized to vote.");
-        }
-
-        [Fact]
-        public void CanVote_Throws_InvalidVote()
-        {
-            var voteContract = CreateNewVoteContract();
-            
-            SetupMessage(Contract, AddressOne);
-            
-            voteContract
-                .Invoking(v => v.Vote("Maybe"))
-                .Should().Throw<SmartContractAssertException>()
-                .WithMessage("Invalid vote option");
         }
 
         [Fact]
@@ -159,27 +157,27 @@ namespace PrivateYesNoVoteTests
             var voteContract = CreateNewVoteContract();
 
             SetupMessage(Contract, AddressOne);
-            SetupBlock(100001);
+            SetupBlock(ulong.MaxValue);
 
             voteContract
-                .Invoking(v => v.Vote("yes"))
+                .Invoking(v => v.Vote(true))
                 .Should().Throw<SmartContractAssertException>()
                 .WithMessage("Voting period has ended.");
         }
 
         [Fact]
-        public void CreateContract_Throws_InvalidVoteEndBlock()
+        public void CreateContract_Throws_BlockDurationOverflow()
         {
             try
             {
-                CreateNewVoteContract(2, 2);
+                CreateNewVoteContract(2, ulong.MaxValue);
                 
                 // Intentionally fail the test if we reach here
                 false.Should().BeTrue();
             }
-            catch (SmartContractAssertException ex)
+            catch (OverflowException ex)
             {
-                ex.Message.Should().Be("Voting period end block must be greater than current block.");
+                ex.Should().NotBeNull();
             }
         }
     }

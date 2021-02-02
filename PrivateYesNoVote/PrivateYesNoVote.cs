@@ -2,14 +2,11 @@
 
 public class PrivateYesNoVote : SmartContract
 {
-    public PrivateYesNoVote(ISmartContractState smartContractState, ulong votePeriodEndBlock, byte[] addressesBytes) 
+    public PrivateYesNoVote(ISmartContractState smartContractState, ulong duration, byte[] addressesBytes) 
         : base(smartContractState)
     {
-        Assert(votePeriodEndBlock > Block.Number, "Voting period end block must be greater than current block.");
-        
-        VotePeriodEndBlock = votePeriodEndBlock;
+        VotePeriodEndBlock = checked(Block.Number + duration);
         Owner = Message.Sender;
-
         WhiteListAddressesExecute(addressesBytes);
     }
 
@@ -39,22 +36,22 @@ public class PrivateYesNoVote : SmartContract
 
     private void SetAuthorization(Address address)
     {
-        PersistentState.SetBool($"Authorized:{address}", true);
+        PersistentState.SetBool($"Voter:{address}", true);
     }
 
     public bool IsAuthorized(Address address)
     {
-        return PersistentState.GetBool($"Authorized:{address}");
+        return PersistentState.GetBool($"Voter:{address}");
     }
 
-    public string GetVote(Address address)
+    public char GetVote(Address address)
     {
-        return PersistentState.GetString($"Vote:{address}");
+        return PersistentState.GetChar($"Vote:{address}");
     }
 
     public void WhitelistAddresses(byte[] addressBytes)
     {
-        Assert(Message.Sender == Owner, "Must be contract owner to whitelist addresses");
+        Assert(Message.Sender == Owner, "Must be contract owner to whitelist addresses.");
         WhiteListAddressesExecute(addressBytes);
     }
 
@@ -68,22 +65,29 @@ public class PrivateYesNoVote : SmartContract
         }
     }
 
-    private void SetVote(Address address, string vote)
+    private void SetVote(Address address, bool vote)
     {
-        PersistentState.SetString($"Vote:{address}", vote);
-
-        if (vote == "yes") YesVotes++;
-        else NoVotes++;
+        char voteChar;
+        
+        if (vote)
+        {
+            voteChar = 'y';
+            YesVotes++;
+        }
+        else
+        {
+            voteChar = 'n';
+            NoVotes++;
+        }
+        
+        PersistentState.SetChar($"Vote:{address}", voteChar);
     }
 
-    public void Vote(string vote)
+    public void Vote(bool vote)
     {
-        vote = vote.ToLower();
-        
         Assert(IsAuthorized(Message.Sender), "Sender is not authorized to vote.");
-        Assert(string.IsNullOrWhiteSpace(GetVote(Message.Sender)), "Sender has already voted.");
+        Assert(GetVote(Message.Sender) == default(char), "Sender has already voted.");
         Assert(Block.Number <= VotePeriodEndBlock, "Voting period has ended.");
-        Assert(vote == "yes" || vote == "no", "Invalid vote option");
         
         SetVote(Message.Sender, vote);
         
@@ -94,6 +98,6 @@ public class PrivateYesNoVote : SmartContract
     {
         [Index]
         public Address Voter;
-        public string Vote;
+        public bool Vote;
     }
 }

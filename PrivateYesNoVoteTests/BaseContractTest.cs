@@ -46,7 +46,7 @@ namespace OpdexProposalVoteTests
             AddressSix = "0x0000000000000000000000000000000000000008".HexToAddress();
         }
 
-        protected PrivateYesNoVote CreateNewVoteContract(ulong currentBlock = 99999, ulong endBlock = 100000)
+        protected PrivateYesNoVote CreateNewVoteContract(ulong currentBlock = 100000, ulong duration = 100)
         {
             MockContractState.Setup(x => x.Message).Returns(new Message(Contract, Owner, 0));
             MockContractState.Setup(x => x.Block.Number).Returns(currentBlock);
@@ -54,7 +54,7 @@ namespace OpdexProposalVoteTests
             var addresses = new[] {AddressOne, AddressTwo, AddressThree};
             var bytes = Serializer.Serialize(addresses);
 
-            return new PrivateYesNoVote(MockContractState.Object, endBlock, bytes);
+            return new PrivateYesNoVote(MockContractState.Object, duration, bytes);
         }
 
         protected void SetupMessage(Address contractAddress, Address sender, ulong value = 0)
